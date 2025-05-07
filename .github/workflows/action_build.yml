@@ -29,15 +29,13 @@ jobs:
 
       - name: Configure Docker registry
         run: |
-          REGISTRY_TYPE="${{ github.event.inputs.registry_type }}"
-
-          if [[ "$REGISTRY_TYPE" == "gcp" ]]; then
+          if [[ "${{ github.event.inputs.registry_type }}" == "gcp" ]]; then
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
-          elif [[ "$REGISTRY_TYPE" == "azure" ]]; then
+          elif [[ "${{ github.event.inputs.registry_type }}" == "azure" ]]; then
             echo "${{ secrets.AZURE_CREDENTIALS }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.AZURE_USERNAME }} --password-stdin
-          elif [[ "$REGISTRY_TYPE" == "dockerhub" ]]; then
+          elif [[ "${{ github.event.inputs.registry_type }}" == "dockerhub" ]]; then
             echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           else
             echo "Unsupported registry type: $REGISTRY_TYPE"
