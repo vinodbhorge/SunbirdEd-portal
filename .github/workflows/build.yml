@@ -7,11 +7,6 @@ on:
         description: 'Registry type (gcp, azure, dockerhub)'
         required: true
         default: 'gcp'
-        type: choice
-        options:
-          - gcp
-          - azure
-          - dockerhub
 
 jobs:
   build:
@@ -34,7 +29,6 @@ jobs:
 
       - name: Configure Docker registry
         run: |
-          echo "Selected registry type: ${{ github.event.inputs.registry_type }}"
           REGISTRY_TYPE="${{ github.event.inputs.registry_type }}"
 
           if [[ "$REGISTRY_TYPE" == "gcp" ]]; then
