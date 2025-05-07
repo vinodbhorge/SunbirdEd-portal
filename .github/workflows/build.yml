@@ -4,11 +4,6 @@ on:
   push:
     tags:
       - '*'
-  workflow_dispatch:
-    inputs:
-      registry_type:
-        description: 'Registry type (gcp, azure, dockerhub)'
-        required: true
 
 jobs:
   build:
