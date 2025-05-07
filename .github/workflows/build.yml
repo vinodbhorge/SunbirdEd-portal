@@ -7,6 +7,11 @@ on:
         description: 'Registry type (gcp, azure, dockerhub)'
         required: true
         default: 'gcp'
+        type: choice
+        options:
+          - gcp
+          - azure
+          - dockerhub
 
 jobs:
   build:
