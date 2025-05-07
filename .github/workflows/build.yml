@@ -1,7 +1,6 @@
-name: Build and Deploy
+name: Build and deploy image
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - action-relase-7.0.1
