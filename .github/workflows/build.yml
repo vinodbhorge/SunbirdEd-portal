@@ -38,4 +38,4 @@ jobs:
     - name: Run build script
       run: |
         chmod +x build.sh
-        ./build.sh
+        ./build.sh v1.0.0 my-node my-org true false
