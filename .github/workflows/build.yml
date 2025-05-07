@@ -1,10 +1,6 @@
 name: Docker Build and Push
 
 on:
-  push:
-    tags:
-      - '*'
-
   workflow_dispatch:
     inputs:
       registry_type:
@@ -31,16 +27,10 @@ jobs:
           ./build.sh ${{ github.ref_name }} true false
           echo "Build completed successfully."
 
-      - name: Set registry type
-        id: registry
-        run: |
-          REGISTRY_TYPE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.registry_type || 'gcp' }}"
-          echo "registry_type=$REGISTRY_TYPE" >> $GITHUB_OUTPUT
-
       - name: Configure Docker registry
         run: |
-          echo "Selected registry type: ${{ steps.registry.outputs.registry_type }}"
-          REGISTRY_TYPE="${{ steps.registry.outputs.registry_type }}"
+          echo "Selected registry type: ${{ github.event.inputs.registry_type }}"
+          REGISTRY_TYPE="${{ github.event.inputs.registry_type }}"
 
           if [[ "$REGISTRY_TYPE" == "gcp" ]]; then
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
