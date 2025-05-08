@@ -27,7 +27,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x build.sh
-          ./build.sh ${{ github.ref_name }} true false
+          ./build.sh ${{ github.ref_name }}-$(echo $GITHUB_SHA | cut -c1-7) true false
           echo "Build completed successfully."
 
       - name: Configure Docker registry
@@ -37,9 +37,9 @@ jobs:
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
           elif [[ "$REGISTRY_TYPE" == "azure" ]]; then
-            echo "${{ secrets.AZURE_CREDENTIALS }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.AZURE_USERNAME }} --password-stdin
+            echo "${{ secrets.PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.USERNAME }} --password-stdin
           elif [[ "$REGISTRY_TYPE" == "dockerhub" ]]; then
-            echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            echo "${{ secrets.PASSWORD }}" | docker login --username ${{ secrets.USERNAME }} --password-stdin
           else
             echo "Unsupported registry type: $REGISTRY_TYPE"
             exit 1
@@ -47,6 +47,6 @@ jobs:
 
       - name: Push Docker image
         run: |
-          IMAGE_TAG=${{ github.ref_name }}
+          IMAGE_TAG="${{ github.ref_name }}-$(echo $GITHUB_SHA | cut -c1-7)"
           docker tag player:$IMAGE_TAG ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
           docker push ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
