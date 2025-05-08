@@ -24,6 +24,11 @@ jobs:
         with:
           node-version: '16'
 
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+
       - name: Run build script
         run: |
           chmod +x build.sh
