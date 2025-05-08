@@ -47,6 +47,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          IMAGE_TAG="manual-trigger"
+          SHORT_SHA=${SHORT_SHA:0:7}
+          IMAGE_TAG=${{ github.ref_name }}_$SHORT_SHA
           docker tag player:$IMAGE_TAG ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
           docker push ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
