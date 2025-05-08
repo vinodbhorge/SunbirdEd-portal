@@ -27,7 +27,7 @@ jobs:
       - name: Run build script
         run: |
           chmod +x build.sh
-          ./build.sh ${{ github.ref_name }}-$(echo $GITHUB_SHA | cut -c1-7) true false
+          ./build.sh ${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7) true false
           echo "Build completed successfully."
 
       - name: Configure Docker registry
@@ -47,6 +47,6 @@ jobs:
 
       - name: Push Docker image
         run: |
-          IMAGE_TAG="${{ github.ref_name }}-$(echo $GITHUB_SHA | cut -c1-7)"
+          IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
           docker tag player:$IMAGE_TAG ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
           docker push ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
