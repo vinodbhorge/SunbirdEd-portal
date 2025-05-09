@@ -1,0 +1,55 @@
+name: Pushing img
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+
+      - name: Run build script
+        run: |
+          chmod +x build.sh
+          ./build.sh ${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7) true false
+          echo "Build completed successfully."
+
+      - name: Determine registry and login
+        run: |
+          IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
+
+          if [[ -n "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]]; then
+            echo "Using Google Container Registry"
+            echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
+            gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
+            gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
+            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+          elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" && -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+          else
+            echo "No external registry configured"
+          fi
+
+          echo "REGISTRY_URL=${REGISTRY_URL}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Push Docker image
+        run: |
+          docker tag player:$IMAGE_TAG $REGISTRY_URL/player:$IMAGE_TAG
+          docker push $REGISTRY_URL/player:$IMAGE_TAG
