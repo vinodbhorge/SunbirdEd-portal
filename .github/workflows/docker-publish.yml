@@ -38,14 +38,11 @@ jobs:
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
-            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
           elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" && -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
             REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
           else
-            echo "No external registry configured, using GitHub Container Registry (GHCR)"
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            REGISTRY_URL="ghcr.io/${{ github.repository_owner }}"
+            echo "No external registry configured"
           fi
 
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
