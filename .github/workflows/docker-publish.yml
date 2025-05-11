@@ -31,8 +31,6 @@ jobs:
 
       - name: Determine registry and login
         run: |
-          IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
-
           if [[ -n "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]]; then
             echo "Using Google Container Registry"
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
@@ -45,9 +43,8 @@ jobs:
             echo "No external registry configured"
           fi
 
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-
       - name: Push Docker image
         run: |
+          IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
           docker tag player:$IMAGE_TAG ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
           docker push ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
