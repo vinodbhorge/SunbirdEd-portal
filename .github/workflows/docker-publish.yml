@@ -37,10 +37,22 @@ jobs:
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
           elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" && -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
-            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+            if [[ "${{ secrets.REGISTRY_NAME }}" == "ghcr.io" ]]; then
+              echo "Using GitHub Container Registry"
+              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+              REGISTRY_URL="ghcr.io"
+            elif [[ "${{ secrets.REGISTRY_NAME }}" == *"azurecr.io" ]]; then
+              echo "Using Azure Container Registry"
+              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+              REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+            else
+              echo "Using Docker Hub or other registry"
+              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+              REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+            fi
           else
             echo "No external registry configured"
+            exit 1
           fi
 
       - name: Push Docker image
