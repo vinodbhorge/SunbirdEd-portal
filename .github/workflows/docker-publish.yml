@@ -48,8 +48,8 @@ jobs:
                 exit 1
             }
 
-            if [[ "${{ secrets.REGISTRY_NAME }}" == *"azurecr.io" ]]; then
-               REGISTRY_URL="${{ secrets.REGISTRY_USERNAME }}.${{ secrets.REGISTRY_NAME }}"
+            if [[ "${{ secrets.REGISTRY_NAME }}" == "sunbirded" ]]; then
+               REGISTRY_URL="${{ secrets.REGISTRY_USERNAME }}.azurecr.io"
             elif [[ "${{ secrets.REGISTRY_NAME }}" == "docker.io" || "${{ secrets.REGISTRY_NAME }}" == *"docker.com" ]]; then
                REGISTRY_URL="docker.io/${{ secrets.REGISTRY_USERNAME }}"
             else
