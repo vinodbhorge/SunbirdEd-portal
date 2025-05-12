@@ -1,0 +1,14 @@
+name: Docker pu
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo inputs
+        run: |
+          echo "Environment: Dev"
+          echo "Version: latest"
