@@ -48,11 +48,11 @@ jobs:
                 exit 1
             }
 
-            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}/${{ secrets.REGISTRY_USERNAME }}"
 
             else
             echo "No external registry configured, using GitHub Container Registry (GHCR)"
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || {
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin || {
                 echo "GitHub Container Registry login failed."
                 exit 1
             }
