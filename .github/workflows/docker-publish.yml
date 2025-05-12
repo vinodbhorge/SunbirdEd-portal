@@ -26,22 +26,44 @@ jobs:
 
       - name: Determine registry and login
         run: |
-          if [[ -n "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]]; then
+            IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
+
+            if [[ -n "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]]; then
             echo "Using Google Container Registry"
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
-          elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" && -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
-              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-          else
-            echo "No external registry configured"
-            exit 1
-          fi
-      - name: Check Docker login
-        run: docker info
+            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}/sunbird-morocco-sandbox-434709/sunbird-morocco-artifact-dev"
+
+            elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" || -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
+            if [[ -z "${{ secrets.REGISTRY_USERNAME }}" || -z "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
+                echo "Error: Incomplete Docker/ACR credentials provided."
+                exit 1
+            fi
+
+            echo "Logging in to custom registry: ${{ secrets.REGISTRY_NAME }}"
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} \
+                --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin || {
+                echo "Docker login failed. Check your credentials."
+                exit 1
+            }
+
+            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+
+            else
+            echo "No external registry configured, using GitHub Container Registry (GHCR)"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || {
+                echo "GitHub Container Registry login failed."
+                exit 1
+            }
+            REGISTRY_URL="ghcr.io/${{ github.repository_owner }}"
+            fi
+
+            echo "REGISTRY_URL=${REGISTRY_URL}" >> $GITHUB_ENV
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
       - name: Push Docker image
         run: |
           IMAGE_TAG="${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)"
-          docker tag player:$IMAGE_TAG ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
-          docker push ${{ secrets.REGISTRY_NAME }}/player:$IMAGE_TAG
+          docker tag player:$IMAGE_TAG $REGISTRY_URL/player:$IMAGE_TAG
+          docker push $REGISTRY_URL/player:$IMAGE_TAG
