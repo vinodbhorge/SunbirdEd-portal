@@ -42,6 +42,8 @@ jobs:
             fi
 
             echo "Logging in to custom registry: ${{ secrets.REGISTRY_NAME }}"
+            echo '{"dns": ["8.8.8.8", "8.8.4.4"]}' | sudo tee /etc/docker/daemon.json
+            sudo systemctl restart docker
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} \
                 --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin || {
                 echo "Docker login failed. Check your credentials."
