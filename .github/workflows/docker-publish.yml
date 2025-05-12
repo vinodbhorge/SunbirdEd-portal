@@ -2,8 +2,8 @@ name: Docker Build and Push Image
 
 on:
   push:
-    branches:
-      - 'action-release-7.0.0.1'
+    tags:
+      - '*'
 
 jobs:
   image-build:
