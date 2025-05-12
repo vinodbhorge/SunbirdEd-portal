@@ -42,16 +42,14 @@ jobs:
             fi
 
             echo "Logging in to custom registry: ${{ secrets.REGISTRY_NAME }}"
-            echo '{"dns": ["8.8.8.8", "8.8.4.4"]}' | sudo tee /etc/docker/daemon.json
-            sudo systemctl restart docker
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} \
                 --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin || {
                 echo "Docker login failed. Check your credentials."
                 exit 1
             }
 
-            if [[ "${{ secrets.REGISTRY_NAME }}" == "sunbirded" ]]; then
-               REGISTRY_URL="${{ secrets.REGISTRY_USERNAME }}.azurecr.io"
+            if [[ "${{ secrets.REGISTRY_NAME }}" == *"azurecr.io" ]]; then
+               REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
             elif [[ "${{ secrets.REGISTRY_NAME }}" == "docker.io" || "${{ secrets.REGISTRY_NAME }}" == *"docker.com" ]]; then
                REGISTRY_URL="docker.io/${{ secrets.REGISTRY_USERNAME }}"
             else
