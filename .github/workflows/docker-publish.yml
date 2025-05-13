@@ -33,7 +33,7 @@ jobs:
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
-            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}/sunbird-morocco-sandbox-434709/sunbird-morocco-artifact-dev"
+            REGISTRY_URL="${{ secrets.REGISTRY_URL }}"
 
             elif [[ -n "${{ secrets.REGISTRY_USERNAME }}" && -n "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
             echo "Logging in to custom Docker registry"
