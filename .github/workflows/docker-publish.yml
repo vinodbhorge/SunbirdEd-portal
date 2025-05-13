@@ -39,7 +39,7 @@ jobs:
             echo "Logging in to custom Docker registry"
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }} \
               --username ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-            REGISTRY_URL="${{ secrets.REGISTRY_NAME }}"
+            REGISTRY_URL="${{ secrets.REGISTRY_URL }}"
 
             else
             echo "Using GitHub Container Registry (GHCR)"
