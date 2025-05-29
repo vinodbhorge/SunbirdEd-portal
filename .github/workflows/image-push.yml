@@ -20,7 +20,7 @@ jobs:
 
       - name: Determine registry and login
         run: |
-          case "${{ vars.registry_provider }}" in
+          case "${{ vars.REGISTRY_PROVIDER }}" in
             "gcp")
               echo "Using Google Container Registry"
               echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
