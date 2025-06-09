@@ -89,7 +89,7 @@ jobs:
           path: src/app/app_dist
 
   build-server:
-    needs: prepare-dist
+    needs: build-client
     runs-on: ubuntu-latest
     steps:
       - name: Check if BUILD_DOCKER_IMAGE is true
@@ -101,7 +101,7 @@ jobs:
       - name: Download app_dist
         uses: actions/download-artifact@v4
         with:
-          name: app-dist
+          name: app-dist-client
           path: src/app/app_dist
 
       - name: Set up Node.js
@@ -118,10 +118,10 @@ jobs:
           yarn install --ignore-engines --no-progress --production=true
           node helpers/resourceBundles/build.js -task="phraseAppPull"
 
-      - name: Upload server app_dist
+      - name: Upload final app_dist
         uses: actions/upload-artifact@v4
         with:
-          name: app-dist-server
+          name: app-dist-final
           path: src/app/app_dist
 
   docker-build:
