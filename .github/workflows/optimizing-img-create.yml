@@ -19,29 +19,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-  prepare-dist:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create app_dist folder
-        run: |
-          cd src/app
-          mkdir -p app_dist/
-          rm -rf dist-cdn
-          touch app_dist/.gitkeep
-          
-      - name: Upload app_dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-dist
-          path: src/app/app_dist
-          retention-days: 1
-
   build-client:
-    needs: prepare-dist
+    needs: setup
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,6 +41,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
 
+      - name: Create app_dist folder
+        run: |
+          cd src/app
+          mkdir -p app_dist/
+          rm -rf dist-cdn
+
       - name: Install and Build Client
         run: |
           cd src/app/client
@@ -79,14 +64,6 @@ jobs:
             npm run inject-cdn-fallback
           fi
 
-      - name: Upload client app_dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-dist-client
-          path: src/app/app_dist
-          if-no-files-found: error  # Fail if no files found
-          retention-days: 1
-
   build-server:
     needs: build-client
     runs-on: ubuntu-latest
@@ -96,12 +73,6 @@ jobs:
         run: echo "BUILD_DOCKER_IMAGE is true, proceeding with build-server job."
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download app_dist
-        uses: actions/download-artifact@v4
-        with:
-          name: app-dist-client
-          path: src/app/app_dist
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -117,32 +88,12 @@ jobs:
           yarn install --ignore-engines --no-progress --production=true
           node helpers/resourceBundles/build.js -task="phraseAppPull"
 
-      - name: Upload final app_dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-dist-final
-          path: src/app/app_dist
-          if-no-files-found: error  # Fail if no files found
-          retention-days: 1
-
   docker-build:
     needs: [build-server, build-client, setup]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download client app_dist
-        uses: actions/download-artifact@v4
-        with:
-          name: app-dist-client
-          path: src/app/app_dist
-
-      - name: Download server app_dist
-        uses: actions/download-artifact@v4
-        with:
-          name: app-dist-server
-          path: src/app/app_dist
 
       - name: Build Docker Image
         run: |
