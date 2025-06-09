@@ -57,7 +57,7 @@ jobs:
             cd client
             echo "pwd after cd client: $(pwd)"
             if grep -q "\"build-cdn\":" package.json; then
-              npm run build-cdn -- --deployUrl=${{ env.CDN_URL }}
+              npm run build-cdn -- --base-href=${{ env.CDN_URL }}
               export sunbird_portal_cdn_url=${{ env.CDN_URL }}
               npm run inject-cdn-fallback
             else
