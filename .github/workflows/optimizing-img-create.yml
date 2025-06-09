@@ -50,7 +50,7 @@ jobs:
             npm run build
             cd ..
             mv app_dist/dist/index.html app_dist/dist/index.ejs
-            mv /server.js app_dist/server.js
+            mv server.js app_dist/server.js
           fi
 
           if [[ "${{ env.BUILD_CDN_ASSETS }}" == "true" ]]; then
