@@ -35,6 +35,7 @@ jobs:
           cd src/app
           mkdir -p app_dist/
           rm -rf dist-cdn
+          touch app_dist/.gitkeep
           
       - name: Upload app_dist
         uses: actions/upload-artifact@v4
