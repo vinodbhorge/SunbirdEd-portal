@@ -29,12 +29,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download app_dist
-        uses: actions/download-artifact@v4
-        with:
-          name: app-dist
-          path: src/app/app_dist
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
