@@ -53,7 +53,7 @@ jobs:
           fi
 
           if [[ "${{ env.BUILD_CDN_ASSETS }}" == "true" ]]; then
-            npm run build-cdn -- --deployUrl ${{ env.CDN_URL }}
+            npm run node --max_old_space_size=8096 ./node_modules/@angular/cli/bin/ng build --configuration production --progress=false --outputPath=./../dist-cdn -- --deployUrl ${{ env.CDN_URL }}
             export sunbird_portal_cdn_url=${{ env.CDN_URL }}
             npm run inject-cdn-fallback
           fi
