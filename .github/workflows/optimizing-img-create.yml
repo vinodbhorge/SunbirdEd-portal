@@ -66,6 +66,13 @@ jobs:
             fi
           fi
 
+      - name: Upload app_dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-dist
+          path: src/app/app_dist
+          retention-days: 1
+
   build-server:
     needs: build-client
     runs-on: ubuntu-latest
@@ -81,6 +88,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
+
+      - name: Download app_dist
+        uses: actions/download-artifact@v4
+        with:
+          name: app-dist
+          path: src/app/app_dist
 
       - name: Install and Build Server
         run: |
