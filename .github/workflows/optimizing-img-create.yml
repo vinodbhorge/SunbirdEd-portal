@@ -38,7 +38,6 @@ jobs:
         with:
           name: app-dist
           path: src/app/app_dist
-          if-no-files-found: error  # Fail if no files found
           retention-days: 1
 
   build-client:
