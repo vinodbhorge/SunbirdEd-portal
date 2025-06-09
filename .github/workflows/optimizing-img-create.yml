@@ -1,0 +1,176 @@
+name: Portal Build
+
+on:
+  push:
+    branches:
+      - '*'
+
+env:
+  NODE_VERSION: 18.20.0
+  PYTHON: /usr/bin/python3.7
+  BUILD_CDN_ASSETS: ${{ vars.BUILD_CDN_ASSETS || 'false' }}
+  CDN_URL: ${{ vars.CDN_URL || 'https://cdn.example.com/' }}
+  BUILD_DOCKER_IMAGE: ${{ vars.BUILD_DOCKER_IMAGE || 'false' }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git Hash
+        id: vars
+        run: echo "commit_hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  prepare-dist:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create app_dist folder
+        run: |
+          cd src/app
+          mkdir -p app_dist/
+          rm -rf dist-cdn
+          
+      - name: Upload app_dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-dist
+          path: src/app/app_dist
+
+  build-client:
+    needs: prepare-dist
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download app_dist
+        uses: actions/download-artifact@v3
+        with:
+          name: app-dist
+          path: src/app/app_dist
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install and Build Client
+        run: |
+          cd src/app/client
+          yarn install --no-progress --production=true
+
+          if [[ "${{ env.BUILD_DOCKER_IMAGE }}" == "true" ]]; then
+            npm run build
+            cd ..
+            mv app_dist/dist/index.html app_dist/dist/index.ejs
+          fi
+
+          if [[ "${{ env.BUILD_CDN_ASSETS }}" == "true" ]]; then
+            npm run build-cdn -- --deployUrl ${{ env.CDN_URL }}
+            export sunbird_portal_cdn_url=${{ env.CDN_URL }}
+            npm run inject-cdn-fallback
+          fi
+
+      - name: Upload updated app_dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-dist-client
+          path: src/app/app_dist
+
+  build-server:
+    needs: prepare-dist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if BUILD_DOCKER_IMAGE is true
+        if: ${{ env.BUILD_DOCKER_IMAGE == 'true' }}
+        run: echo "BUILD_DOCKER_IMAGE is true, proceeding with build-server job."
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download app_dist
+        uses: actions/download-artifact@v3
+        with:
+          name: app-dist-client
+          path: src/app/app_dist
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install and Build Server
+        run: |
+          cd src/app
+          cp -R libs helpers proxy resourcebundles package.json framework.config.js sunbird-plugins routes constants controllers server.js ./../../Dockerfile app_dist
+          cd app_dist
+          yarn install --ignore-engines --no-progress --production=true
+          node helpers/resourceBundles/build.js -task="phraseAppPull"
+
+      - name: Upload final app_dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-dist-final
+          path: src/app/app_dist
+
+  docker-build:
+    needs: [build-server, build-client, setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download final app_dist
+        uses: actions/download-artifact@v3
+        with:
+          name: app-dist-final
+          path: src/app/app_dist
+
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME="player"
+          IMAGE_TAG=$(echo "${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)" | tr '[:upper:]' '[:lower:]')
+
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          
+          docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+      - name: Login  Docker Registry
+        if: ${{ env.BUILD_DOCKER_IMAGE == 'true' }}
+        run: |
+          echo "Pushing Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
+          
+          case "${{ vars.REGISTRY_PROVIDER }}" in
+          "gcp")
+            echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
+            gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
+            gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
+            REGISTRY_URL=$(echo "${{ secrets.REGISTRY_URL }}" | tr '[:upper:]' '[:lower:]')
+            ;;
+          "azure" | "dockerhub")
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "${{ secrets.REGISTRY_NAME }}" \
+              --username "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+            REGISTRY_URL=$(echo "${{ secrets.REGISTRY_URL }}" | tr '[:upper:]' '[:lower:]')
+            ;;
+          *)
+            REPO_NAME_LOWERCASE=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            REGISTRY_URL="ghcr.io/$REPO_NAME_LOWERCASE"
+            ;;
+          esac
+
+      - name: Push Docker image
+        run: |
+          docker tag ${IMAGE_NAME}:$IMAGE_TAG $REGISTRY_URL/${IMAGE_NAME}:$IMAGE_TAG
+          docker push $REGISTRY_URL/${IMAGE_NAME}:$IMAGE_TAG
