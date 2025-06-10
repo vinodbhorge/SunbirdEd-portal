@@ -153,13 +153,27 @@ jobs:
           # Copy server files (this will merge, not overwrite everything)
           cp -r temp/server/* src/app/app_dist/ 2>/dev/null || true
           
-          # Handle potential conflicts - server files take precedence
-          # You can customize this logic based on your needs
+          # Ensure proper permissions
+          chmod -R 755 src/app/app_dist/
           
           echo "Final merged contents:"
           ls -la src/app/app_dist/
 
+      - name: Prepare Docker Build Context
+        run: |
+          # Create a temporary build context directory
+          mkdir -p docker-build-context
+          
+          # Copy Dockerfile and other necessary files
+          cp Dockerfile docker-build-context/
+          
+          # Copy the merged app_dist
+          mkdir -p docker-build-context/src/app
+          cp -r src/app/app_dist docker-build-context/src/app/
+
+
       - name: Build Docker Image
+        working-directory: docker-build-context
         run: |
           IMAGE_NAME="player"
           IMAGE_TAG=$(echo "${{ github.ref_name }}_$(echo $GITHUB_SHA | cut -c1-7)" | tr '[:upper:]' '[:lower:]')
