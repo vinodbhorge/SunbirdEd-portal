@@ -152,6 +152,9 @@ jobs:
           
           # Copy server files (this will merge, not overwrite everything)
           cp -r temp/server/* src/app/app_dist/ 2>/dev/null || true
+          
+          echo "Final merged contents:"
+          ls -la src/app/app_dist/
 
       - name: Build Docker Image
         run: |
