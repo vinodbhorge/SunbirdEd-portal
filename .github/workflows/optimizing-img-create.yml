@@ -50,7 +50,6 @@ jobs:
             npm run build
             cd ..
             mv app_dist/dist/index.html app_dist/dist/index.ejs
-            mv ./server.js app_dist/server.js
           fi
 
           if [[ "${{ env.BUILD_CDN_ASSETS }}" == "true" ]]; then
@@ -66,6 +65,11 @@ jobs:
               npm run build
             fi
           fi
+
+      - name: List app_dist contents after build-client
+        run: |
+          echo "Contents of app_dist after build-client job:"
+          ls -la src/app/app_dist/
 
       - name: Upload app_dist
         uses: actions/upload-artifact@v4
@@ -103,6 +107,18 @@ jobs:
           cd app_dist
           yarn install --ignore-engines --no-progress --production=true
           node helpers/resourceBundles/build.js -task="phraseAppPull"
+
+      - name: List app_dist contents after build-server
+        run: |
+          echo "Contents of app_dist after build-server job:"
+          ls -la src/app/app_dist/
+
+      - name: Upload app_dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-dist
+          path: src/app/app_dist
+          retention-days: 1
 
   docker-build:
     needs: [build-server, build-client, setup]
