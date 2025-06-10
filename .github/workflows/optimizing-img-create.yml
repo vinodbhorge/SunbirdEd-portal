@@ -74,12 +74,12 @@ jobs:
       - name: Upload app_dist
         uses: actions/upload-artifact@v4
         with:
-          name: app-dist
+          name: client-app-dist
           path: src/app/app_dist
           retention-days: 1
 
   build-server:
-    needs: build-client
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - name: Check if BUILD_DOCKER_IMAGE is true
@@ -94,11 +94,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
 
-      - name: Download app_dist
-        uses: actions/download-artifact@v4
-        with:
-          name: app-dist
-          path: src/app/app_dist
+      - name: Create app_dist folder
+        run: |
+          cd src/app
+          mkdir -p app_dist/
+          rm -rf dist-cdn
 
       - name: Install and Build Server
         run: |
@@ -116,7 +116,7 @@ jobs:
       - name: Upload app_dist
         uses: actions/upload-artifact@v4
         with:
-          name: app-dist
+          name: server-app-dist
           path: src/app/app_dist
           retention-days: 1
 
@@ -126,6 +126,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Create app_dist directory structure
+        run: |
+          mkdir -p src/app/app_dist
+          mkdir -p temp/client
+          mkdir -p temp/server
+
+      - name: Download client artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: client-app-dist
+          path: temp/client
+
+      - name: Download server artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: server-app-dist
+          path: temp/server
+
+      - name: Merge artifacts into common app_dist
+        run: |
+          # Copy client files
+          cp -r temp/client/* src/app/app_dist/ 2>/dev/null || true
+          
+          # Copy server files (this will merge, not overwrite everything)
+          cp -r temp/server/* src/app/app_dist/ 2>/dev/null || true
+          
+          # Handle potential conflicts - server files take precedence
+          # You can customize this logic based on your needs
+          
+          echo "Final merged contents:"
+          ls -la src/app/app_dist/
 
       - name: Build Docker Image
         run: |
