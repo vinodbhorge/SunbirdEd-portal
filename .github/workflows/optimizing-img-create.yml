@@ -8,9 +8,9 @@ on:
 env:
   NODE_VERSION: 18.20.0
   PYTHON: /usr/bin/python3.7
-  BUILD_CDN_ASSETS: ${{ vars.BUILD_CDN_ASSETS || 'false' }}
-  CDN_URL: ${{ vars.CDN_URL || 'https://cdn.example.com/' }}
-  BUILD_DOCKER_IMAGE: ${{ vars.BUILD_DOCKER_IMAGE || 'false' }}
+  BUILD_CDN_ASSETS: ${{ vars.BUILD_CDN_ASSETS }}
+  CDN_URL: ${{ vars.CDN_URL }}
+  BUILD_DOCKER_IMAGE: ${{ vars.BUILD_DOCKER_IMAGE }}
 
 jobs:
   setup:
@@ -33,14 +33,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
 
-      - name: Restore node_modules cache
-        id: cache
-        uses: actions/cache@v4
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v3
+        id: yarn-cache
         with:
-          path: src/app/client
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        id: node-modules-cache
+        with:
+          path: |
+            src/app/client/node_modules
+            src/app/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('src/app/client/yarn.lock', 'src/app/yarn.lock', 'src/app/client/package.json', 'src/app/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
@@ -101,16 +115,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
 
-      - name: Restore node_modules cache
-        id: cache
-        uses: actions/cache@v4
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v3
+        id: yarn-cache
         with:
-          path: src/app/app_dist
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            ${{ runner.os }}-yarn-
+
+      - name: Cache node_modules for server
+        uses: actions/cache@v3
+        id: server-node-modules-cache
+        with:
+          path: |
+            src/app/app_dist/node_modules
+            src/app/node_modules
+          key: ${{ runner.os }}-server-node-modules-${{ hashFiles('src/app/yarn.lock', 'src/app/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-server-node-modules-
 
       - name: Create app_dist folder
         run: |
