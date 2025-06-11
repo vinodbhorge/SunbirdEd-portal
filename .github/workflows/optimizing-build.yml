@@ -14,7 +14,7 @@ env:
 
 jobs:
   build-client:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     defaults:
       run:
         shell: bash
@@ -33,7 +33,7 @@ jobs:
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache yarn dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -43,7 +43,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Cache client node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: client-node-modules-cache
         with:
           path: src/app/client/node_modules
@@ -78,7 +78,6 @@ jobs:
           fi
 
           if [[ "${{ env.BUILD_CDN_ASSETS }}" == "true" ]]; then
-            echo "pwd: $(pwd)"
             cd client
             echo "pwd after cd client: $(pwd)"
             if grep -q "\"build-cdn\":" package.json; then
@@ -125,7 +124,7 @@ jobs:
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache yarn dependencies for server
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: yarn-cache-server
         with:
           path: ${{ steps.yarn-cache-dir-path-server.outputs.dir }}
@@ -135,7 +134,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Cache server node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: server-node-modules-cache
         with:
           path: src/app/app_dist/node_modules
@@ -237,7 +236,7 @@ jobs:
             echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | base64 --decode > $HOME/gcloud-key.json
             gcloud auth activate-service-account --key-file=$HOME/gcloud-key.json
             gcloud auth configure-docker ${{ secrets.REGISTRY_NAME }}
-            REGISTRY_URL=$(echo "${{ secrets.REGISTRY_URL }}" | tr '[:upper:]' '[:lower:]')
+            REGISTRY_URL=$(echo "${{ secrets.REGISTRY_URL }}" | tr '[:upper:]' '[:lower:]') 
             ;;
           "azure" | "dockerhub")
             echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "${{ secrets.REGISTRY_NAME }}" \
